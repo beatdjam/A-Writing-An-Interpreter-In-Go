@@ -17,21 +17,11 @@ func New(input string) *Lexer {
 	return l
 }
 
-func (l *Lexer) readChar() {
-	// 終端まで文字を読む
-	// 0 = nullのような「読まなかった」を表す文字
-	if l.readPosition >= len(l.input) {
-		l.ch = 0
-	} else {
-		l.ch = l.input[l.readPosition]
-	}
-	l.position = l.readPosition
-	l.readPosition++
-}
-
 // NextToken : inputから次のTokenを取り出す
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
+
+	l.skipWhitespace()
 
 	switch l.ch {
 	// symbol
@@ -58,6 +48,12 @@ func (l *Lexer) NextToken() token.Token {
 		// 英字から識別子、キーワードを読み出す
 		if isLetter(l.ch) {
 			tok.Literal = l.readIdentifier()
+			tok.Type = token.LookupIdent(tok.Literal)
+			// 現在のトークンの末尾まで読み切っているのでreturnする
+			return tok
+		} else if isDigit(l.ch) {
+			tok.Type = token.INT
+			tok.Literal = l.readNumber()
 			return tok
 		} else {
 			// いずれにも該当しない場合は Illegalとして返す
@@ -74,6 +70,18 @@ func newToken(tokenType token.TokenType, ch byte) token.Token {
 	return token.Token{Type: tokenType, Literal: string(ch)}
 }
 
+func (l *Lexer) readChar() {
+	// 終端まで文字を読む
+	if l.readPosition >= len(l.input) {
+		// 0 = nullのような「読まなかった」を表す文字
+		l.ch = 0
+	} else {
+		l.ch = l.input[l.readPosition]
+	}
+	l.position = l.readPosition
+	l.readPosition++
+}
+
 // 連続する英字を走査し、識別子を取り出す
 func (l *Lexer) readIdentifier() string {
 	position := l.position
@@ -83,7 +91,28 @@ func (l *Lexer) readIdentifier() string {
 	return l.input[position:l.position]
 }
 
+// 連続する数字を走査して取り出す
+func (l *Lexer) readNumber() string {
+	position := l.position
+	for isDigit(l.ch) {
+		l.readChar()
+	}
+	return l.input[position:l.position]
+}
+
+// 空白文字(space, tab, 改行) をスキップして次のトークンの先頭まですすめる
+func (l *Lexer) skipWhitespace() {
+	for l.ch == ' ' || l.ch == '\t' || l.ch == '\n' || l.ch == '\r' {
+		l.readChar()
+	}
+}
+
 // プログラム内に含みうる英字文字列を定義する
 func isLetter(ch byte) bool {
 	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
+}
+
+// プログラム内に含みうる数字を定義する
+func isDigit(ch byte) bool {
+	return '0' <= ch && ch <= '9'
 }
