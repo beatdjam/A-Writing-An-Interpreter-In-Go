@@ -1,3 +1,3 @@
-module github.com/beatdjam/A-Writing-An-Interpreter-In-Go
+module monkey
 
 go 1.15
