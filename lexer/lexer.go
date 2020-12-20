@@ -29,10 +29,12 @@ func (l *Lexer) readChar() {
 	l.readPosition++
 }
 
+// NextToken : inputから次のTokenを取り出す
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
 	switch l.ch {
+	// symbol
 	case '=':
 		tok = newToken(token.ASSIGN, l.ch)
 	case ';':
@@ -52,12 +54,36 @@ func (l *Lexer) NextToken() token.Token {
 	case 0:
 		tok.Literal = ""
 		tok.Type = token.EOF
+	default:
+		// 英字から識別子、キーワードを読み出す
+		if isLetter(l.ch) {
+			tok.Literal = l.readIdentifier()
+			return tok
+		} else {
+			// いずれにも該当しない場合は Illegalとして返す
+			tok = newToken(token.ILLEGAL, l.ch)
+		}
 	}
 
 	l.readChar()
 	return tok
 }
 
+// Illegal以外のTokenを作る
 func newToken(tokenType token.TokenType, ch byte) token.Token {
 	return token.Token{Type: tokenType, Literal: string(ch)}
+}
+
+// 連続する英字を走査し、識別子を取り出す
+func (l *Lexer) readIdentifier() string {
+	position := l.position
+	for isLetter(l.ch) {
+		l.readChar()
+	}
+	return l.input[position:l.position]
+}
+
+// プログラム内に含みうる英字文字列を定義する
+func isLetter(ch byte) bool {
+	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
 }
