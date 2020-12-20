@@ -26,13 +26,31 @@ func (l *Lexer) NextToken() token.Token {
 	switch l.ch {
 	// symbol
 	case '=':
-		tok = newToken(token.ASSIGN, l.ch)
+		// 一文字先読み
+		if l.peekChar() == '=' {
+			// 現在の文字を退避して次の文字を読み出す
+			ch := l.ch
+			l.readChar()
+			literal := string(ch) + string(l.ch)
+			tok = token.Token{Type: token.EQ, Literal: literal}
+		} else {
+			tok = newToken(token.ASSIGN, l.ch)
+		}
 	case '+':
 		tok = newToken(token.PLUS, l.ch)
 	case '-':
 		tok = newToken(token.MINUS, l.ch)
 	case '!':
-		tok = newToken(token.BANG, l.ch)
+		// 一文字先読み
+		if l.peekChar() == '=' {
+			// 現在の文字を退避して次の文字を読み出す
+			ch := l.ch
+			l.readChar()
+			literal := string(ch) + string(l.ch)
+			tok = token.Token{Type: token.NOT_EQ, Literal: literal}
+		} else {
+			tok = newToken(token.BANG, l.ch)
+		}
 	case '*':
 		tok = newToken(token.ASTERISK, l.ch)
 	case '/':
@@ -92,6 +110,13 @@ func (l *Lexer) readChar() {
 	}
 	l.position = l.readPosition
 	l.readPosition++
+}
+
+func (l *Lexer) peekChar() byte {
+	if l.readPosition >= len(l.input) {
+		return 0
+	}
+	return l.input[l.readPosition]
 }
 
 // 連続する英字を走査し、識別子を取り出す
